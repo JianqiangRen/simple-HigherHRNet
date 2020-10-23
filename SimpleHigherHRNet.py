@@ -281,6 +281,55 @@ class SimpleHigherHRNet:
             return res
         else:
             return res[0]
+        
+    @staticmethod
+    def vis_joints(image, joints, color, show_text=True):
+        coco_part_labels = [
+            'nose', 'eye_l', 'eye_r', 'ear_l', 'ear_r',
+            'sho_l', 'sho_r', 'elb_l', 'elb_r', 'wri_l', 'wri_r',
+            'hip_l', 'hip_r', 'kne_l', 'kne_r', 'ank_l', 'ank_r'
+        ]
+        coco_part_idx = {
+            b: a for a, b in enumerate(coco_part_labels)
+        }
+        coco_part_orders = [
+            ('nose', 'eye_l'), ('eye_l', 'eye_r'), ('eye_r', 'nose'),
+            ('eye_l', 'ear_l'), ('eye_r', 'ear_r'), ('ear_l', 'sho_l'),
+            ('ear_r', 'sho_r'), ('sho_l', 'sho_r'), ('sho_l', 'hip_l'),
+            ('sho_r', 'hip_r'), ('hip_l', 'hip_r'), ('sho_l', 'elb_l'),
+            ('elb_l', 'wri_l'), ('sho_r', 'elb_r'), ('elb_r', 'wri_r'),
+            ('hip_l', 'kne_l'), ('kne_l', 'ank_l'), ('hip_r', 'kne_r'),
+            ('kne_r', 'ank_r')
+        ]
+    
+        part_idx = coco_part_idx
+        part_orders = coco_part_orders
+    
+        def link(a, b, color):
+            if part_idx[a] < joints.shape[0] and part_idx[b] < joints.shape[0]:
+                jointa = joints[part_idx[a]]
+                jointb = joints[part_idx[b]]
+                if jointa[2] > 0 and jointb[2] > 0:
+                    cv2.line(
+                        image,
+                        (int(jointa[0]), int(jointa[1])),
+                        (int(jointb[0]), int(jointb[1])),
+                        color,
+                        2
+                    )
+    
+        # add joints
+        for i, joint in enumerate(joints):
+            if joint[2] > 0:
+                cv2.circle(image, (int(joint[0]), int(joint[1])), 1, color, 2)
+                if show_text:
+                    cv2.putText(image, str(i) + "[{:.3f}]".format(joint[2]), (int(joint[0]), int(joint[1])),
+                                cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+        # add link
+        for pair in part_orders:
+            link(pair[0], pair[1], color)
+    
+        return image
 
 
 if __name__ == '__main__':
